@@ -3,6 +3,7 @@ namespace Calendar;
 
 use DateTimeInterface;
 use DateTime;
+use DateInterval;
 
 class Calendar implements CalendarInterface{
 
@@ -97,10 +98,49 @@ class Calendar implements CalendarInterface{
      */
     public function getCalendar(){
     	$calendar = array();
-    	$startDate = $this->dateTime->format('Y-m-01');
-    	$currMonth = $this->dateTime->format('m');
-    	$startDate = new DateTime(date('Y-m-d', strtotime($startDate)));
-
+    	$day = $this->getFirstDayOfCalendar();
+    	while($day <= $this->getLastDayOfCalendar()) {
+            $this->addDayToCalendar($calendar, $day);
+            $day->add(new DateInterval('P1D'));
+        }
+        return $calendar;
     }
+
+    private function getFirstDayOfCalendar(){
+        $day = new DateTime(date("Y-m-01", $this->dateTime->getTimestamp()));
+        $firstWeekDay = $this->getFirstWeekDay();
+        if($firstWeekDay > 1) {
+            $diff = 'P' . ($firstWeekDay - 1) . 'D';
+            $day->sub(new DateInterval($diff));
+        }
+        return $day;
+    }
+
+    private function getLastDayOfCalendar(){
+    	$numberOfDaysInThisMonth = $this->getNumberOfDaysInThisMonth();
+        $day = new DateTime(date("Y-m-".$numberOfDaysInThisMonth." 23:59:59", $this->dateTime->getTimestamp()));
+        $lastDayNumber = $day->format('w');
+        if($lastDayNumber > 0) {
+            $diff = 'P' . (7 - $lastDayNumber) . 'D';
+            $day->add(new DateInterval($diff));
+        }
+        return $day;
+    }
+
+    private function addDayToCalendar(&$calendar, DateTime $day)
+    {
+        $weekNumber = (int) $day->format('W');
+        $previousWeekDay = clone $this->dateTime;
+        $previousWeekDay->sub(new DateInterval('P7D'));
+        $previousWeekNumber = (int) $previousWeekDay->format('W');
+        if(!array_key_exists($weekNumber, $calendar)) {
+            $calendar[$weekNumber] = array();
+        }
+        $calendar[$weekNumber][$day->format('j')] = $weekNumber == $previousWeekNumber;
+    }
+
+    /*private function setYear($year){
+    	$this->datetime->setDate($year, 1, 1);
+    }*/
 }
 ?>
